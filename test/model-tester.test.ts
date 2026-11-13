@@ -115,12 +115,19 @@ describe('model-tester (llama cli configuration test runner)', () => {
     expect(res.combinedOutput).toContain('why is the sky blue?');
   });
 
-  it('persists custom testCommand and defaultPrompt in app settings file', async () => {
+  it('persists custom testCommand, serveHost, servePort, and defaultPrompt in app settings file', async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'llamacpp-settings-test-'));
     try {
       const presetPath = path.join(tmpDir, 'models-preset.ini');
+
+      const defaults = await loadAppTestSettings(presetPath);
+      expect(defaults.serveHost).toBe('0.0.0.0');
+      expect(defaults.servePort).toBe(8080);
+
       await saveAppTestSettings(presetPath, {
         testCommand: 'llama-cli -p "{PROMPT}"',
+        serveHost: '127.0.0.1',
+        servePort: 9090,
         defaultPrompt: 'Explain quantum entanglement in one sentence.',
         maxPredictTokens: 48,
         timeoutSeconds: 60,
@@ -128,6 +135,8 @@ describe('model-tester (llama cli configuration test runner)', () => {
 
       const loaded = await loadAppTestSettings(presetPath);
       expect(loaded.testCommand).toBe('llama-cli -p "{PROMPT}"');
+      expect(loaded.serveHost).toBe('127.0.0.1');
+      expect(loaded.servePort).toBe(9090);
       expect(loaded.defaultPrompt).toBe('Explain quantum entanglement in one sentence.');
       expect(loaded.maxPredictTokens).toBe(48);
       expect(loaded.timeoutSeconds).toBe(60);

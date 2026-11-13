@@ -7,6 +7,8 @@ export type ServerLogVerbosity = 'minimal' | 'all';
 
 export const DEFAULT_MAX_SERVER_LOG_LINES = 200;
 export const MAX_SINGLE_LOG_LINE_LENGTH = 500;
+export const DEFAULT_SERVE_HOST = '0.0.0.0';
+export const DEFAULT_SERVE_PORT = 8080;
 
 export interface LlamaServeCommandSpec {
   command: string;
@@ -27,6 +29,8 @@ export interface ServerStateSnapshot {
 export interface StartLlamaServeOptions {
   presetPath: string;
   serveCommand?: string;
+  serveHost?: string;
+  servePort?: number;
   verbosity?: ServerLogVerbosity;
   maxLogLines?: number;
   onStateChange?: (snapshot: ServerStateSnapshot) => void;
@@ -41,17 +45,38 @@ export interface RunningLlamaServeController {
 }
 
 /**
- * Builds the `llama serve --models-preset <presetPath>` command and argument list.
+ * Builds the `llama serve --models-preset <presetPath> --host <host> --port <port>` command and argument list.
  */
 export function buildLlamaServeCommandArgs(
   presetPath: string,
-  serveCommand = 'llama serve'
+  serveCommand = 'llama serve',
+  serveHost = DEFAULT_SERVE_HOST,
+  servePort = DEFAULT_SERVE_PORT
 ): LlamaServeCommandSpec {
   const tokens = splitCommandTokens(serveCommand.trim() || 'llama serve');
   const command = tokens[0] ?? 'llama';
   const baseArgs = tokens.slice(1);
   const resolvedPreset = path.resolve(presetPath);
   const args = [...baseArgs, '--models-preset', resolvedPreset];
+
+  const hasHostFlag = baseArgs.some((a) => a === '--host' || a.startsWith('--host='));
+  const hasPortFlag = baseArgs.some((a) => a === '--port' || a.startsWith('--port='));
+
+  if (!hasHostFlag) {
+    const normalizedHost = serveHost.trim() || DEFAULT_SERVE_HOST;
+    args.push('--host', normalizedHost);
+  }
+
+  if (!hasPortFlag) {
+    const normalizedPort =
+      typeof servePort === 'number' &&
+      Number.isInteger(servePort) &&
+      servePort >= 1 &&
+      servePort <= 65535
+        ? servePort
+        : DEFAULT_SERVE_PORT;
+    args.push('--port', String(normalizedPort));
+  }
 
   const quotedArgs = args.map((a) => (/\s/.test(a) ? `"${a}"` : a));
   return {
@@ -148,7 +173,12 @@ export function extractListeningUrl(line: string): string | undefined {
 export function startLlamaServeProcess(
   options: StartLlamaServeOptions
 ): RunningLlamaServeController {
-  const spec = buildLlamaServeCommandArgs(options.presetPath, options.serveCommand);
+  const spec = buildLlamaServeCommandArgs(
+    options.presetPath,
+    options.serveCommand,
+    options.serveHost,
+    options.servePort
+  );
   const startedAt = Date.now();
   let currentStatus: ServerStatusState = 'starting';
   let listeningUrl: string | undefined;

@@ -63,6 +63,8 @@ export function resolveModelListHotkeys(
 export const DEFAULT_APP_TEST_SETTINGS: AppTestSettings = {
   testCommand: 'llama cli',
   serveCommand: 'llama serve',
+  serveHost: '0.0.0.0',
+  servePort: 8080,
   defaultPrompt: 'why is the sky blue?',
   maxPredictTokens: 64,
   timeoutSeconds: 120,
@@ -946,6 +948,17 @@ export async function loadAppTestSettings(presetPath: string): Promise<AppTestSe
         typeof parsed.serveCommand === 'string' && parsed.serveCommand.trim()
           ? parsed.serveCommand.trim()
           : DEFAULT_APP_TEST_SETTINGS.serveCommand,
+      serveHost:
+        typeof parsed.serveHost === 'string' && parsed.serveHost.trim()
+          ? parsed.serveHost.trim()
+          : DEFAULT_APP_TEST_SETTINGS.serveHost,
+      servePort:
+        typeof parsed.servePort === 'number' &&
+        Number.isInteger(parsed.servePort) &&
+        parsed.servePort >= 1 &&
+        parsed.servePort <= 65535
+          ? parsed.servePort
+          : DEFAULT_APP_TEST_SETTINGS.servePort,
       defaultPrompt:
         typeof parsed.defaultPrompt === 'string' && parsed.defaultPrompt.trim()
           ? parsed.defaultPrompt

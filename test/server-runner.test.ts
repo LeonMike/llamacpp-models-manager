@@ -11,14 +11,41 @@ import {
 } from '../src/core/server-runner.js';
 
 describe('server-runner (llama serve process & bounded log manager)', () => {
-  it('builds llama serve --models-preset <path> command arguments', () => {
+  it('builds llama serve --models-preset <path> command arguments with default and custom host/port', () => {
     const spec = buildLlamaServeCommandArgs('./presets/my-preset.ini');
     expect(spec.command).toBe('llama');
-    expect(spec.args).toEqual(['serve', '--models-preset', path.resolve('./presets/my-preset.ini')]);
+    expect(spec.args).toEqual([
+      'serve',
+      '--models-preset',
+      path.resolve('./presets/my-preset.ini'),
+      '--host',
+      '0.0.0.0',
+      '--port',
+      '8080',
+    ]);
+
+    const configuredSpec = buildLlamaServeCommandArgs('/tmp/p.ini', 'llama serve', '127.0.0.1', 9090);
+    expect(configuredSpec.command).toBe('llama');
+    expect(configuredSpec.args).toEqual([
+      'serve',
+      '--models-preset',
+      path.resolve('/tmp/p.ini'),
+      '--host',
+      '127.0.0.1',
+      '--port',
+      '9090',
+    ]);
 
     const customSpec = buildLlamaServeCommandArgs('/tmp/p.ini', 'llama-server --port 8081');
     expect(customSpec.command).toBe('llama-server');
-    expect(customSpec.args).toEqual(['--port', '8081', '--models-preset', path.resolve('/tmp/p.ini')]);
+    expect(customSpec.args).toEqual([
+      '--port',
+      '8081',
+      '--models-preset',
+      path.resolve('/tmp/p.ini'),
+      '--host',
+      '0.0.0.0',
+    ]);
   });
 
   it('filters noisy tensor logs in minimal mode and bounds the log ring buffer + line length', () => {

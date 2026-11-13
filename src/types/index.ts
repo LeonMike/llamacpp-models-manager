@@ -277,6 +277,14 @@ export interface AppTestSettings {
    */
   serveCommand?: string;
   /**
+   * Host/IP address to bind when starting `llama serve` (default: `"0.0.0.0"`).
+   */
+  serveHost?: string;
+  /**
+   * Port to listen on when starting `llama serve` (default: `8080`).
+   */
+  servePort?: number;
+  /**
    * Visibility mode for model header details in Models Config view.
    */
   modelDetailVisibility?: ModelDetailVisibilityMode;

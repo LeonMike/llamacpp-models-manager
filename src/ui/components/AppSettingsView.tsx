@@ -35,6 +35,8 @@ interface SettingField {
   label: string;
   description: string;
   isNumeric?: boolean;
+  min?: number;
+  max?: number;
   isVisibilityCycle?: boolean;
 }
 
@@ -119,6 +121,21 @@ const SETTING_FIELDS: SettingField[] = [
     description: 'CLI command to start the server (default: "llama serve", --models-preset is appended)',
   },
   {
+    id: 'serveHost',
+    key: 'serveHost',
+    label: 'Serve Host',
+    description: 'Host/IP address for llama serve (--host, default: "0.0.0.0")',
+  },
+  {
+    id: 'servePort',
+    key: 'servePort',
+    label: 'Serve Port',
+    description: 'TCP port for llama serve (--port, default: 8080)',
+    isNumeric: true,
+    min: 1,
+    max: 65535,
+  },
+  {
     id: 'defaultPrompt',
     key: 'defaultPrompt',
     label: 'Default Test Prompt',
@@ -190,9 +207,11 @@ export const AppSettingsView: React.FC<AppSettingsViewProps> = ({
       } else if (field.key) {
         const trimmed = rawValue.trim();
         if (field.isNumeric) {
-          const parsed = Number(trimmed);
-          if (!Number.isNaN(parsed) && parsed > 0) {
-            (next as unknown as Record<string, unknown>)[field.key] = Math.round(parsed);
+          const parsed = Math.round(Number(trimmed));
+          const min = field.min ?? 1;
+          const max = field.max ?? Number.MAX_SAFE_INTEGER;
+          if (!Number.isNaN(parsed) && parsed >= min && parsed <= max) {
+            (next as unknown as Record<string, unknown>)[field.key] = parsed;
           }
         } else if (trimmed.length > 0) {
           (next as unknown as Record<string, unknown>)[field.key] = trimmed;

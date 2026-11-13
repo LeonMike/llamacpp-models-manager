@@ -39,6 +39,8 @@ import { ServerView } from './components/ServerView.js';
 import {
   appendBoundedLogLines,
   DEFAULT_MAX_SERVER_LOG_LINES,
+  DEFAULT_SERVE_HOST,
+  DEFAULT_SERVE_PORT,
   RunningLlamaServeController,
   ServerLogVerbosity,
   ServerStateSnapshot,
@@ -99,6 +101,8 @@ export const App: React.FC<AppProps> = ({
     const ctrl = startLlamaServeProcess({
       presetPath,
       serveCommand: testSettings.serveCommand ?? 'llama serve',
+      serveHost: testSettings.serveHost ?? DEFAULT_SERVE_HOST,
+      servePort: testSettings.servePort ?? DEFAULT_SERVE_PORT,
       verbosity: serverVerbosityRef.current,
       maxLogLines: DEFAULT_MAX_SERVER_LOG_LINES,
       onStateChange: (snapshot) => {
@@ -120,7 +124,13 @@ export const App: React.FC<AppProps> = ({
     });
     serverControllerRef.current = ctrl;
     setStatusMessage(`Starting llama serve with ${presetPath}...`);
-  }, [presetPath, serverState.status, testSettings.serveCommand]);
+  }, [
+    presetPath,
+    serverState.status,
+    testSettings.serveCommand,
+    testSettings.serveHost,
+    testSettings.servePort,
+  ]);
 
   const handleStopServer = useCallback(async () => {
     const ctrl = serverControllerRef.current;
@@ -142,6 +152,8 @@ export const App: React.FC<AppProps> = ({
     const nextCtrl = startLlamaServeProcess({
       presetPath,
       serveCommand: testSettings.serveCommand ?? 'llama serve',
+      serveHost: testSettings.serveHost ?? DEFAULT_SERVE_HOST,
+      servePort: testSettings.servePort ?? DEFAULT_SERVE_PORT,
       verbosity: serverVerbosityRef.current,
       maxLogLines: DEFAULT_MAX_SERVER_LOG_LINES,
       onStateChange: (snapshot) => {
@@ -163,7 +175,7 @@ export const App: React.FC<AppProps> = ({
     });
     serverControllerRef.current = nextCtrl;
     setStatusMessage(`Restarted llama serve with ${presetPath}.`);
-  }, [presetPath, testSettings.serveCommand]);
+  }, [presetPath, testSettings.serveCommand, testSettings.serveHost, testSettings.servePort]);
 
   const setActiveTab = (nextTab: ActiveTab) => {
     setActiveTabState(nextTab);
@@ -529,6 +541,8 @@ export const App: React.FC<AppProps> = ({
             <ServerView
               presetPath={presetPath}
               serveCommand={testSettings.serveCommand ?? 'llama serve'}
+              serveHost={testSettings.serveHost ?? DEFAULT_SERVE_HOST}
+              servePort={testSettings.servePort ?? DEFAULT_SERVE_PORT}
               hasUnsavedChanges={hasUnsavedChanges}
               serverState={serverState}
               logLines={serverLogs}

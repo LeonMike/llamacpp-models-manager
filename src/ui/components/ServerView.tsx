@@ -3,6 +3,8 @@ import { Box, Text, useInput } from 'ink';
 import {
   buildLlamaServeCommandArgs,
   DEFAULT_MAX_SERVER_LOG_LINES,
+  DEFAULT_SERVE_HOST,
+  DEFAULT_SERVE_PORT,
   ServerLogVerbosity,
   ServerStateSnapshot,
 } from '../../core/server-runner.js';
@@ -16,6 +18,8 @@ import {
 export interface ServerViewProps {
   presetPath: string;
   serveCommand?: string;
+  serveHost?: string;
+  servePort?: number;
   hasUnsavedChanges: boolean;
   serverState: ServerStateSnapshot;
   logLines: string[];
@@ -32,6 +36,8 @@ export interface ServerViewProps {
 export const ServerView: React.FC<ServerViewProps> = ({
   presetPath,
   serveCommand = 'llama serve',
+  serveHost = DEFAULT_SERVE_HOST,
+  servePort = DEFAULT_SERVE_PORT,
   hasUnsavedChanges,
   serverState,
   logLines,
@@ -55,8 +61,8 @@ export const ServerView: React.FC<ServerViewProps> = ({
     serverState.status === 'stopping';
 
   const commandSpec = useMemo(
-    () => buildLlamaServeCommandArgs(presetPath, serveCommand),
-    [presetPath, serveCommand]
+    () => buildLlamaServeCommandArgs(presetPath, serveCommand, serveHost, servePort),
+    [presetPath, serveCommand, serveHost, servePort]
   );
 
   const wrappedLogLines = useMemo(() => {
