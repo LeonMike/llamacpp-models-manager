@@ -1,10 +1,10 @@
 {
-  "name": "llamacpp-ui-manager",
+  "name": "llamacpp-models-manager",
   "version": "1.0.0",
   "description": "CLI and Interactive TUI manager for organizing GGUF models and configuring llama.cpp presets",
   "type": "module",
   "bin": {
-    "llamacpp-ui-manager": "./dist/cli.js"
+    "llamacpp-models-manager": "./dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
