@@ -18,6 +18,7 @@ import { detectMoeModel } from './gguf-parser.js';
 export const KNOWN_COMMON_KEYS = [
   'jinja',
   'device',
+  'mmproj-device',
   'split-mode',
   'reasoning',
   'parallel',
@@ -45,6 +46,7 @@ export const KNOWN_MODEL_KEYS = [
   'mmproj',
   'alias',
   'device',
+  'mmproj-device',
   'split-mode',
   'parallel',
   'n-gpu-layers',
@@ -784,4 +786,64 @@ export function computeInitialDisabledSectionIds(
   }
 
   return disabled;
+}
+
+/**
+ * Renames a model/configuration section (`oldSectionId` -> `updatedSection.sectionId`)
+ * inside a `PresetConfigDocument` while preserving section order and updating
+ * `disabledSectionIds` if the section was disabled.
+ */
+export function renameModelSectionInDocument(
+  doc: PresetConfigDocument,
+  oldSectionId: string,
+  updatedSection: ModelPresetSection
+): { doc: PresetConfigDocument; renamed: boolean; reason?: string } {
+  const newSectionId = updatedSection.sectionId.replace(/[\[\]]/g, '').trim();
+  if (!newSectionId) {
+    return { doc, renamed: false, reason: 'Section name cannot be empty.' };
+  }
+  if (!(oldSectionId in doc.models)) {
+    return { doc, renamed: false, reason: `Section [${oldSectionId}] does not exist.` };
+  }
+  if (newSectionId === oldSectionId) {
+    return {
+      doc: {
+        ...doc,
+        models: {
+          ...doc.models,
+          [oldSectionId]: { ...updatedSection, sectionId: oldSectionId },
+        },
+      },
+      renamed: false,
+    };
+  }
+  if (newSectionId in doc.models) {
+    return {
+      doc,
+      renamed: false,
+      reason: `Section [${newSectionId}] already exists.`,
+    };
+  }
+
+  const nextModels: Record<string, ModelPresetSection> = {};
+  for (const [key, value] of Object.entries(doc.models)) {
+    if (key === oldSectionId) {
+      nextModels[newSectionId] = { ...updatedSection, sectionId: newSectionId };
+    } else {
+      nextModels[key] = value;
+    }
+  }
+
+  const nextDisabled = doc.disabledSectionIds
+    ? doc.disabledSectionIds.map((id) => (id === oldSectionId ? newSectionId : id))
+    : undefined;
+
+  return {
+    doc: {
+      ...doc,
+      models: nextModels,
+      disabledSectionIds: nextDisabled,
+    },
+    renamed: true,
+  };
 }

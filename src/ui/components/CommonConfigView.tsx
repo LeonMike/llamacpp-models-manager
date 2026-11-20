@@ -23,11 +23,13 @@ interface FieldDescriptor {
   label: string;
   description: string;
   isBoolean?: boolean;
+  isPath?: boolean;
 }
 
 const COMMON_FIELDS: FieldDescriptor[] = [
   { key: 'jinja', label: 'jinja', description: 'Enable Jinja2 chat template engine (true/false)', isBoolean: true },
   { key: 'device', label: 'device', description: 'Comma-separated list of devices to use for offloading (e.g. CUDA0,CUDA1 or none)' },
+  { key: 'mmproj-device', label: 'mmproj-device', description: 'Device(s) to use for offloading the multimodal projector (e.g. CUDA0,CPU)' },
   { key: 'split-mode', label: 'split-mode', description: 'How to split the model across multiple GPUs (none, layer, row)' },
   { key: 'reasoning', label: 'reasoning', description: 'Reasoning / thinking mode configuration (e.g. on, off, auto, budget)' },
   { key: 'parallel', label: 'parallel', description: 'Number of parallel sequences / slots to decode simultaneously (e.g. 1, 4)' },
@@ -46,7 +48,7 @@ const COMMON_FIELDS: FieldDescriptor[] = [
   { key: 'cache-type-k', label: 'cache-type-k', description: 'Default KV cache K data type (f16, q8_0, q4_0, etc.)' },
   { key: 'cache-type-v', label: 'cache-type-v', description: 'Default KV cache V data type (f16, q8_0, q4_0, etc.)' },
   { key: 'reasoning-format', label: 'reasoning-format', description: 'Reasoning extraction format (deepseek, none, auto)' },
-  { key: 'chat-template', label: 'chat-template', description: 'Override default named chat template' },
+  { key: 'chat-template', label: 'chat-template', description: 'Override default named chat template', isPath: true },
   { key: 'system-prompt', label: 'system-prompt', description: 'Default system prompt if applicable' },
 ];
 
@@ -265,6 +267,7 @@ export const CommonConfigView: React.FC<CommonConfigViewProps> = ({
           initialValue={draftVal}
           placeholder={activeField.description}
           columns={columns}
+          enablePathAutocomplete={Boolean(activeField.isPath)}
           onSubmit={commitFieldEdit}
           onCancel={() => updateEditingState(false)}
         />

@@ -109,6 +109,7 @@ export const DRAFT_DEPENDENT_KEYS = [
   'cache-type-k-draft',
   'cache-type-v-draft',
   'n-gpu-layers-draft',
+  'spec-draft-device',
   'spec-draft-n-max',
   'spec-draft-p-min',
   'spec-type',
@@ -122,6 +123,7 @@ export type DraftDependentKey = (typeof DRAFT_DEPENDENT_KEYS)[number];
 export interface CommonPresetConfig {
   jinja?: boolean | string;
   device?: string;
+  'mmproj-device'?: string;
   'split-mode'?: string;
   reasoning?: string;
   parallel?: number | string;
@@ -153,6 +155,7 @@ export interface ModelPresetSection {
 
   // Hardware & Memory
   device?: string;
+  'mmproj-device'?: string;
   'split-mode'?: string;
   parallel?: number | string;
   'n-gpu-layers'?: number | string;
@@ -189,6 +192,7 @@ export interface ModelPresetSection {
   'cache-type-k-draft'?: string;
   'cache-type-v-draft'?: string;
   'n-gpu-layers-draft'?: number | string;
+  'spec-draft-device'?: string;
   'spec-draft-n-max'?: number | string;
   'spec-draft-p-min'?: number | string;
   'spec-type'?: string;

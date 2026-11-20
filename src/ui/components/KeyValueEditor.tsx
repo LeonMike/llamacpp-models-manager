@@ -368,6 +368,7 @@ export const KeyValueEditor: React.FC<KeyValueEditorProps> = ({
           initialValue={draftValue}
           placeholder="Enter flag value..."
           columns={maxCols}
+          enablePathAutocomplete={true}
           onSubmit={(val) => {
             const next = { ...pairs, [draftKey.trim()]: val };
             onChange(next);

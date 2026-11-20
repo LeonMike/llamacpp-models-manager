@@ -19,6 +19,7 @@ import {
   loadAllConfigsAvailableFile,
   loadPresetFile,
   mergePresetWithAllConfigs,
+  renameModelSectionInDocument,
   saveAllConfigsAvailableFile,
   savePresetFile,
   syncPresetWithScan,
@@ -344,6 +345,32 @@ export const App: React.FC<AppProps> = ({
   };
 
   const handleUpdateModel = (sectionId: string, updatedSection: ModelPresetSection) => {
+    const sanitizedId = updatedSection.sectionId.replace(/[\[\]]/g, '').trim();
+    if (sanitizedId !== sectionId) {
+      if (!sanitizedId) {
+        setStatusMessage('Cannot rename: model/configuration name cannot be empty.');
+        return;
+      }
+      if (sanitizedId in presetDoc.models) {
+        setStatusMessage(
+          `Cannot rename [${sectionId}] to [${sanitizedId}]: name already exists.`
+        );
+        return;
+      }
+      setPresetDoc((prev) => renameModelSectionInDocument(prev, sectionId, updatedSection).doc);
+      setTestStatuses((prev) => {
+        if (!(sectionId in prev)) return prev;
+        const next = { ...prev };
+        next[sanitizedId] = next[sectionId]!;
+        delete next[sectionId];
+        void saveSectionTestStatuses(presetPath, next);
+        return next;
+      });
+      setHasUnsavedChanges(true);
+      setStatusMessage(`Renamed [${sectionId}] → [${sanitizedId}].`);
+      return;
+    }
+
     setPresetDoc((prev) => ({
       ...prev,
       models: {

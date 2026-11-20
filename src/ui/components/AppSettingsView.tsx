@@ -38,6 +38,8 @@ interface SettingField {
   min?: number;
   max?: number;
   isVisibilityCycle?: boolean;
+  isPath?: boolean;
+  pathMode?: 'single-path' | 'command';
 }
 
 const SETTING_FIELDS: SettingField[] = [
@@ -113,12 +115,16 @@ const SETTING_FIELDS: SettingField[] = [
     key: 'testCommand',
     label: 'Test Command',
     description: 'CLI command to run when testing a model (default: "llama cli" or "llama cli -p {PROMPT}")',
+    isPath: true,
+    pathMode: 'command',
   },
   {
     id: 'serveCommand',
     key: 'serveCommand',
     label: 'Serve Command',
     description: 'CLI command to start the server (default: "llama serve", --models-preset is appended)',
+    isPath: true,
+    pathMode: 'command',
   },
   {
     id: 'serveHost',
@@ -384,6 +390,8 @@ export const AppSettingsView: React.FC<AppSettingsViewProps> = ({
           initialValue={draftVal}
           placeholder={activeField.description}
           columns={columns}
+          enablePathAutocomplete={Boolean(activeField.isPath)}
+          pathAutocompleteMode={activeField.pathMode ?? 'single-path'}
           onSubmit={commitFieldEdit}
           onCancel={() => updateEditing(false)}
         />

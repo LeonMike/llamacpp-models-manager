@@ -908,7 +908,13 @@ export const ModelListView: React.FC<ModelListViewProps> = ({
         testSettings={testSettings}
         sectionTestStatus={testStatuses[selectedModelId]}
         onUpdateTestStatus={onUpdateTestStatus}
-        onChange={(updated) => onUpdateModel(selectedModelId, updated)}
+        onChange={(updated) => {
+          const targetId = updated.sectionId.replace(/[\[\]]/g, '').trim();
+          onUpdateModel(selectedModelId, updated);
+          if (targetId && targetId !== selectedModelId && !(targetId in models)) {
+            setSelectedModelIdState(targetId);
+          }
+        }}
         onBack={() => {
           setSelectedModelId(null);
           onEditingTextChange?.(false);

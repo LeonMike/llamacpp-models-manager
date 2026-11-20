@@ -16,6 +16,7 @@ import {
   loadPresetFile,
   mergePresetWithAllConfigs,
   parsePresetIni,
+  renameModelSectionInDocument,
   sanitizeDraftOptions,
   saveAllConfigsAvailableFile,
   savePresetFile,
@@ -42,6 +43,7 @@ describe('preset-config INI parser & serializer', () => {
         jinja: true,
         device: 'CUDA0,CUDA1',
         'split-mode': 'layer',
+        'mmproj-device': 'CUDA0',
         reasoning: 'auto',
         parallel: 4,
         'top-p': 0.95,
@@ -63,6 +65,7 @@ describe('preset-config INI parser & serializer', () => {
           'cache-type-k-draft': 'q8_0',
           'cache-type-v-draft': 'q8_0',
           'n-gpu-layers-draft': 99,
+          'spec-draft-device': 'CUDA0',
           'spec-draft-n-max': 16,
           'spec-draft-p-min': 0.75,
           'spec-type': 'draft-mtp',
@@ -78,6 +81,7 @@ describe('preset-config INI parser & serializer', () => {
           'cache-type-k-draft': 'q4_0',
           'cache-type-v-draft': 'q4_0',
           'n-gpu-layers-draft': 32,
+          'spec-draft-device': 'CUDA1',
           'spec-draft-n-max': 8,
           'spec-draft-p-min': 0.8,
           custom: {},
@@ -91,6 +95,7 @@ describe('preset-config INI parser & serializer', () => {
     expect(ini).toContain('[*]');
     expect(ini).toContain('jinja = true');
     expect(ini).toContain('device = CUDA0,CUDA1');
+    expect(ini).toContain('mmproj-device = CUDA0');
     expect(ini).toContain('split-mode = layer');
     expect(ini).toContain('reasoning = auto');
     expect(ini).toContain('parallel = 4');
@@ -107,6 +112,7 @@ describe('preset-config INI parser & serializer', () => {
     expect(qwenBlock).toContain('cache-type-k-draft = q8_0');
     expect(qwenBlock).toContain('cache-type-v-draft = q8_0');
     expect(qwenBlock).toContain('n-gpu-layers-draft = 99');
+    expect(qwenBlock).toContain('spec-draft-device = CUDA0');
     expect(qwenBlock).toContain('spec-draft-n-max = 16');
     expect(qwenBlock).toContain('spec-draft-p-min = 0.75');
     expect(qwenBlock).toContain('spec-type = draft-mtp');
@@ -118,6 +124,7 @@ describe('preset-config INI parser & serializer', () => {
     expect(llamaBlock).not.toContain('cache-type-k-draft');
     expect(llamaBlock).not.toContain('cache-type-v-draft');
     expect(llamaBlock).not.toContain('n-gpu-layers-draft');
+    expect(llamaBlock).not.toContain('spec-draft-device');
     expect(llamaBlock).not.toContain('spec-draft-n-max');
     expect(llamaBlock).not.toContain('spec-draft-p-min');
     expect(llamaBlock).not.toContain('spec-type');
@@ -500,6 +507,49 @@ spec-type = draft-mtp
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });
     }
+  });
+
+  it('renames a model or custom configuration section while preserving order, disabled state, and preventing collisions', () => {
+    const doc: PresetConfigDocument = {
+      common: { custom: {} },
+      models: {
+        'Model-A': { sectionId: 'Model-A', model: '/models/a.gguf', temp: 0.7, custom: {} },
+        'Model-A-custom': {
+          sectionId: 'Model-A-custom',
+          model: '/models/a.gguf',
+          temp: 0.2,
+          custom: {},
+        },
+        'Model-B': { sectionId: 'Model-B', model: '/models/b.gguf', custom: {} },
+      },
+      disabledSectionIds: ['Model-A-custom'],
+    };
+
+    // Successful rename preserves order and updates disabledSectionIds
+    const res = renameModelSectionInDocument(doc, 'Model-A-custom', {
+      ...doc.models['Model-A-custom']!,
+      sectionId: '[Model-A-coding]',
+    });
+    expect(res.renamed).toBe(true);
+    expect(Object.keys(res.doc.models)).toEqual(['Model-A', 'Model-A-coding', 'Model-B']);
+    expect(res.doc.models['Model-A-coding']?.sectionId).toBe('Model-A-coding');
+    expect(res.doc.models['Model-A-coding']?.temp).toBe(0.2);
+    expect(res.doc.disabledSectionIds).toEqual(['Model-A-coding']);
+
+    // Collision is rejected
+    const collision = renameModelSectionInDocument(res.doc, 'Model-A-coding', {
+      ...res.doc.models['Model-A-coding']!,
+      sectionId: 'Model-B',
+    });
+    expect(collision.renamed).toBe(false);
+    expect(collision.reason).toContain('already exists');
+
+    // Empty name is rejected
+    const empty = renameModelSectionInDocument(res.doc, 'Model-A-coding', {
+      ...res.doc.models['Model-A-coding']!,
+      sectionId: '   ',
+    });
+    expect(empty.renamed).toBe(false);
   });
 });
 

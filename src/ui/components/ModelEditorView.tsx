@@ -56,22 +56,26 @@ interface FieldSpec {
   description: string;
   isBoolean?: boolean;
   isStringOnly?: boolean;
+  isPath?: boolean;
 }
 
 const CORE_FIELDS: FieldSpec[] = [
-  { key: 'model', label: 'model', description: 'Path to primary .gguf model file', isStringOnly: true },
-  { key: 'mmproj', label: 'mmproj', description: 'Path to multimodal vision projector .gguf (optional)', isStringOnly: true },
+  { key: 'sectionId', label: 'name (section-id)', description: 'Model / configuration name ([section-id]) in preset INI', isStringOnly: true },
+  { key: 'model', label: 'model', description: 'Path to primary .gguf model file', isStringOnly: true, isPath: true },
+  { key: 'mmproj', label: 'mmproj', description: 'Path to multimodal vision projector .gguf (optional)', isStringOnly: true, isPath: true },
   {
     key: 'model-draft',
     label: 'model-draft',
     description: 'Path to MTP / speculative draft .gguf (unlocks Draft/MTP tab when set)',
     isStringOnly: true,
+    isPath: true,
   },
   { key: 'alias', label: 'alias', description: 'Optional alias name exposed by llama serve', isStringOnly: true },
 ];
 
 const HARDWARE_FIELDS: FieldSpec[] = [
   { key: 'device', label: 'device', description: 'Comma-separated list of devices to use (e.g. CUDA0,CUDA1)', isStringOnly: true },
+  { key: 'mmproj-device', label: 'mmproj-device', description: 'Device(s) to use for offloading the multimodal projector (e.g. CUDA0,CPU)', isStringOnly: true },
   { key: 'split-mode', label: 'split-mode', description: 'How to split the model across multiple GPUs (none, layer, row)', isStringOnly: true },
   { key: 'parallel', label: 'parallel', description: 'Number of parallel sequences / slots to decode simultaneously' },
   { key: 'n-gpu-layers', label: 'n-gpu-layers', description: 'GPU layers to offload (e.g. 99 or -1)' },
@@ -119,7 +123,7 @@ const SAMPLING_FIELDS: FieldSpec[] = [
 const CHAT_FIELDS: FieldSpec[] = [
   { key: 'jinja', label: 'jinja', description: 'Override Jinja template engine for this model (true/false)', isBoolean: true },
   { key: 'reasoning', label: 'reasoning', description: 'Reasoning / thinking mode configuration (on, off, auto)', isStringOnly: true },
-  { key: 'chat-template', label: 'chat-template', description: 'Custom chat template name or string', isStringOnly: true },
+  { key: 'chat-template', label: 'chat-template', description: 'Custom chat template name or string', isStringOnly: true, isPath: true },
   { key: 'reasoning-format', label: 'reasoning-format', description: 'Reasoning format (deepseek, none, auto)', isStringOnly: true },
   { key: 'system-prompt', label: 'system-prompt', description: 'Model-specific system prompt', isStringOnly: true },
 ];
@@ -150,6 +154,12 @@ const DRAFT_FIELDS: FieldSpec[] = [
     key: 'n-gpu-layers-draft',
     label: 'n-gpu-layers-draft',
     description: 'Number of layers to offload to GPU for the draft model',
+  },
+  {
+    key: 'spec-draft-device',
+    label: 'spec-draft-device',
+    description: 'Device(s) to use for offloading the draft model (e.g. CUDA0,CPU)',
+    isStringOnly: true,
   },
   {
     key: 'spec-draft-n-max',
@@ -340,7 +350,12 @@ export const ModelEditorView: React.FC<ModelEditorViewProps> = ({
         custom: { ...section.custom },
       };
       const trimmed = rawValue.trim();
-      if (trimmed === '') {
+      if (field.key === 'sectionId') {
+        const sanitized = trimmed.replace(/[\[\]]/g, '').trim();
+        if (sanitized) {
+          next.sectionId = sanitized;
+        }
+      } else if (trimmed === '') {
         delete next[field.key];
       } else if (!field.isStringOnly && trimmed.toLowerCase() === 'true') {
         (next as unknown as Record<string, unknown>)[field.key] = true;
@@ -484,7 +499,7 @@ export const ModelEditorView: React.FC<ModelEditorViewProps> = ({
         }
       } else if (input === 'x' || key.delete) {
         const field = activeFields[selectedIndex];
-        if (field && field.key !== 'model') {
+        if (field && field.key !== 'model' && field.key !== 'sectionId') {
           const next: ModelPresetSection = {
             ...section,
             custom: { ...section.custom },
@@ -883,6 +898,7 @@ export const ModelEditorView: React.FC<ModelEditorViewProps> = ({
               : activeField.description
           }
           columns={columns}
+          enablePathAutocomplete={Boolean(activeField.isPath)}
           onSubmit={commitFieldEdit}
           onCancel={() => updateEditing(false)}
         />

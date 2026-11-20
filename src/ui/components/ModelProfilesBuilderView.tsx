@@ -65,6 +65,7 @@ export const ModelProfilesBuilderView: React.FC<ModelProfilesBuilderViewProps> =
   // Custom profile builder state
   const [customFieldIndex, setCustomFieldIndex] = useState(0);
   const [isTypingId, setIsTypingId] = useState(false);
+  const [renamingSection, setRenamingSection] = useState<ModelPresetSection | null>(null);
   const [customId, setCustomId] = useState(`${entry.variantId}-custom`);
   const [customUseVision, setCustomUseVision] = useState(hasVisionAvailable);
   const [customUseDraft, setCustomUseDraft] = useState(hasDraftAvailable);
@@ -181,6 +182,10 @@ export const ModelProfilesBuilderView: React.FC<ModelProfilesBuilderViewProps> =
       }
 
       // 'slots' mode
+      if (renamingSection) {
+        return;
+      }
+
       if (key.escape || input === 'q' || input === 'b') {
         onBack();
         return;
@@ -211,6 +216,15 @@ export const ModelProfilesBuilderView: React.FC<ModelProfilesBuilderViewProps> =
             setSelectedIndex((prev) => Math.max(0, prev - 1));
           }
         }
+      } else if (input === 'r') {
+        const targetSec =
+          selectedIndex < slots.length
+            ? slotToSectionMap.get(slots[selectedIndex].key)
+            : extraSections[selectedIndex - slots.length];
+        if (targetSec) {
+          setRenamingSection(targetSec);
+          onEditingTextChange?.(true);
+        }
       } else if (key.return || input === 'e') {
         if (selectedIndex < slots.length) {
           const slot = slots[selectedIndex];
@@ -230,7 +244,7 @@ export const ModelProfilesBuilderView: React.FC<ModelProfilesBuilderViewProps> =
         }
       }
     },
-    { isActive: !isTypingId }
+    { isActive: !isTypingId && !renamingSection }
   );
 
   const innerWidth = Math.max(40, columns - 2);
@@ -412,7 +426,7 @@ export const ModelProfilesBuilderView: React.FC<ModelProfilesBuilderViewProps> =
         <Box flexDirection="column" width={innerWidth} overflowY="hidden" overflowX="hidden">
           <Box justifyContent="space-between" paddingX={1} width={innerWidth}>
             <Text color="gray" wrap="truncate-end">
-              [Space] Enable/Disable Combination │ [Enter/e] Configure Parameters │ [n] Add Custom Profile
+              [Space] Enable/Disable │ [Enter/e] Configure │ [r] Rename │ [n] Add Custom Profile
             </Text>
           </Box>
 
@@ -570,6 +584,32 @@ export const ModelProfilesBuilderView: React.FC<ModelProfilesBuilderViewProps> =
               ↓ ({totalSlotRows - endIndex} more below)
             </Text>
           )}
+        </Box>
+      )}
+
+      {renamingSection && (
+        <Box marginTop={1}>
+          <BottomTextEditorBar
+            label={`Rename [${renamingSection.sectionId}]`}
+            initialValue={renamingSection.sectionId}
+            placeholder="Enter new model / configuration name..."
+            columns={columns}
+            onSubmit={(val) => {
+              const sanitized = val.replace(/[\[\]]/g, '').trim();
+              if (sanitized && sanitized !== renamingSection.sectionId) {
+                onSaveSection(renamingSection.sectionId, {
+                  ...renamingSection,
+                  sectionId: sanitized,
+                });
+              }
+              setRenamingSection(null);
+              onEditingTextChange?.(false);
+            }}
+            onCancel={() => {
+              setRenamingSection(null);
+              onEditingTextChange?.(false);
+            }}
+          />
         </Box>
       )}
     </Box>
